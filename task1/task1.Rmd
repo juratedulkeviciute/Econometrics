@@ -24,7 +24,7 @@ numb
 
 R draws a boxplot, color of boxplot is going to be light blue.
 
-```{r, echo=FALSE} 
+```{r} 
 boxplot(numb, col="lightblue")
 ```
 
