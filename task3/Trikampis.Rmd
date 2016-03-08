@@ -1,0 +1,73 @@
+---
+title: "Trikampis"
+author: "Jūratė Dulkevičiūtė"
+date: "Monday, March 07, 2016"
+output: html_document
+---
+
+#### Antroji užduotis
+
+### Trikampis (Iššūkis)
+
+**Užduotis:** Fraktalo generavimas. Kartais atsitiktinumas sugeneruoja labai neatsitiktines struktūras. Pvz: https://en.wikipedia.org/wiki/Sierpinski_triangle Padarykite R gražią aplikaciją, kurioje būtų vizualiai realizuotas Sierpinskio trikampio generavimas Chaos game principu.
+
+Chaos game principas:   
+1. Take 3 points in a plane to form a triangle, you need not draw it.  
+2. Randomly select any point inside the triangle and consider that your current position.  
+3. Randomly select any one of the 3 vertex points.  
+4. Move half the distance from your current position to the selected vertex.  
+5. Plot the current position.  
+6. Repeat from step 3.  
+
+**Pirmas žingsnis.** Pasirenkame tris taškus, kurie bus trikampio viršūnės:
+```{r}
+A<-c(0,0)
+B<-c(2,0)
+C<-c(1,sqrt(3))
+```
+
+**Antras žingsnis.** Pasirenkame bet kokį atsitiktinį tašką trikampio viduje:
+```{r}
+x1<-runif(1,0,1)
+y1<-runif(1,0,1)
+D <-rbind(c( (1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C))
+```
+Čia pasirenkame du atsitiktinius skaičius iš intervalo $[0,1]$. Tada pritaikome formulę $(1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C)$, kuri yra skirta sukurti tašką, kur bus trikampio viduje.
+  
+**Trečias žingsnis.** Sukuriame fuknciją, kurį atsitiktinai gautam skaičiui (1,2 arba 3) priskiria atitinkamą trikampio viršūnės tašką:
+```{r}
+pra<-function(){
+  y<-sample(3, size=1)
+  if ( y==1) {
+    y<-A
+  } else if ( y==2) {
+    y<-B
+  } else 
+    y<-C
+}
+```
+
+**Ketvirtas žingsnis.** Funkcija skirta apskaičiuoti pirmą tašką, skaičiuojama pagal formulę: $1/2*(atsitiktinis taškas trikampio viduje * kažkuris trikampio viršūnės taškas)$
+```{r}
+taskas<-function(){ 
+  v1<-0.5*(D+pra())  
+}
+```
+Nubrėžiame pirmą tašką. **Penktame žingsnyje** susikuriame matricą, kurioje nėra reikšmių, tada apskaičiuojame pirmą matricos eilutės ir stulpelio reikšmę, bei nubrėžiame ją. 
+**Šeštame žingsnyje** sukuriamas **for** ciklas, kuriame apskaičiuojamos likusios matricos reikšmės, bei išbėžiami gauti taškai. Taip gaunamas Sierpinskio trikampis.
+```{r}
+plot(taskas(), xlim=c(0,2), ylim=c(0,sqrt(3)), col=2, pch=20, xlab="x", ylab="y", main="Sierpinskio trikampis")
+ 
+# Penktas žingsnis:
+v<-matrix(NA,7000,2)
+v[1,]<-c((0.5*(taskas()+pra())))
+points(v, col="blue", pch=20)
+
+# Šeštas žingsnis:
+for(i in 2:7000){
+  v[i,]<-c((0.5*(v[i-1,]+pra())))
+  points(v[i,1], v[i,2], col="blue", pch=20)
+}
+```
+
+
