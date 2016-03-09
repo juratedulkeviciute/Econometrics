@@ -19,7 +19,7 @@ Chaos game principas:
 5. Plot the current position.  
 6. Repeat from step 3.  
 
-**Pirmas žingsnis.** Pasirenkame tris taškus, kurie bus trikampio viršūnės:
+**Pirmas žingsnis.** Pasirenkame tris taškus, kurie bus trikampio viršūnės ( trikampis turi būti lygiakraštis ):
 ```{r}
 A<-c(0,0)
 B<-c(2,0)
@@ -31,8 +31,9 @@ C<-c(1,sqrt(3))
 x1<-runif(1,0,1)
 y1<-runif(1,0,1)
 D <-rbind(c( (1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C))
+D
 ```
-Čia pasirenkame du atsitiktinius skaičius iš intervalo $[0,1]$. Tada pritaikome formulę $(1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C)$, kuri yra skirta sukurti tašką, kur bus trikampio viduje.
+Čia pasirenkame du atsitiktinius skaičius iš intervalo $[0,1]$. Tada pritaikome formulę: $(1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C)$ , kuri yra skirta apskaičiuoti tašką, kuris bus trikampio viduje.
   
 **Trečias žingsnis.** Sukuriame fuknciją, kurį atsitiktinai gautam skaičiui (1,2 arba 3) priskiria atitinkamą trikampio viršūnės tašką:
 ```{r}
@@ -47,7 +48,7 @@ pra<-function(){
 }
 ```
 
-**Ketvirtas žingsnis.** Funkcija skirta apskaičiuoti pirmą tašką, skaičiuojama pagal formulę: $1/2*(atsitiktinis taškas trikampio viduje * kažkuris trikampio viršūnės taškas)$
+**Ketvirtas žingsnis.** Funkcija skirta apskaičiuoti pirmą tašką, skaičiuojama pagal formulę: $$1/2*(atsitiktinis taškas trikampio viduje * kažkuris trikampio viršūnės taškas)$$ :
 ```{r}
 taskas<-function(){ 
   v1<-0.5*(D+pra())  
