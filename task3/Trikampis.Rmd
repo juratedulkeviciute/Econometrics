@@ -30,12 +30,13 @@ C<-c(1,sqrt(3))
 ```{r}
 x1<-runif(1,0,1)
 y1<-runif(1,0,1)
-D <-rbind(c( (1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C))
+D<-rbind(c( (1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C))
 D
 ```
-Čia pasirenkame du atsitiktinius skaičius iš intervalo $[0,1]$. Tada pritaikome formulę: $(1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C)$ , kuri yra skirta apskaičiuoti tašką, kuris bus trikampio viduje.
+Čia pasirenkame du atsitiktinius skaičius iš intervalo $[0,1]$. Tada pritaikome formulę:$(1 -  \sqrt{x_1}) \cdot A + (\sqrt{x_1} \cdot (1 - y_1)) \cdot B + (\sqrt{x_1} \cdot y_1) \cdot C)$ , kuri yra skirta apskaičiuoti tašką, kuris bus trikampio viduje.
+
   
-**Trečias žingsnis.** Sukuriame fuknciją, kurį atsitiktinai gautam skaičiui (1,2 arba 3) priskiria atitinkamą trikampio viršūnės tašką:
+**Trečias žingsnis.** Sukuriame fuknciją, kuri atsitiktinai gautam skaičiui (1,2 arba 3) priskiria atitinkamą trikampio viršūnės tašką:
 ```{r}
 pra<-function(){
   y<-sample(3, size=1)
@@ -45,15 +46,18 @@ pra<-function(){
     y<-B
   } else 
     y<-C
-}
+  }
 ```
 
-**Ketvirtas žingsnis.** Funkcija skirta apskaičiuoti pirmą tašką, skaičiuojama pagal formulę: $$1/2*(atsitiktinis taškas trikampio viduje * kažkuris trikampio viršūnės taškas)$$ :
+
+**Ketvirtas žingsnis.** Funkcija skirta vidurio taško radimui tarp dabartinės padėties (D) ir atsitiktinai pasirinkto pagrindinio taško (A, B arba C):
 ```{r}
 taskas<-function(){ 
   v1<-0.5*(D+pra())  
 }
 ```
+
+
 Nubrėžiame pirmą tašką. **Penktame žingsnyje** susikuriame matricą, kurioje nėra reikšmių, tada apskaičiuojame pirmą matricos eilutės ir stulpelio reikšmę, bei nubrėžiame ją. 
 **Šeštame žingsnyje** sukuriamas **for** ciklas, kuriame apskaičiuojamos likusios matricos reikšmės, bei išbėžiami gauti taškai. Taip gaunamas Sierpinskio trikampis.
 ```{r}
