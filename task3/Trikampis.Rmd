@@ -33,7 +33,7 @@ y1<-runif(1,0,1)
 D<-rbind(c( (1 - sqrt(x1)) * A + (sqrt(x1) * (1 - y1)) * B + (sqrt(x1) * y1) * C))
 D
 ```
-Čia pasirenkame du atsitiktinius skaičius iš intervalo $[0,1]$. Tada pritaikome formulę:$(1 -  \sqrt{x_1}) \cdot A + (\sqrt{x_1} \cdot (1 - y_1)) \cdot B + (\sqrt{x_1} \cdot y_1) \cdot C)$ , kuri yra skirta apskaičiuoti tašką, kuris bus trikampio viduje.
+Čia pasirenkame du atsitiktinius skaičius $x_1,y_1$ iš intervalo $[0,1]$. Tada pritaikome formulę:$(1 -  \sqrt{x_1}) \cdot A + (\sqrt{x_1} \cdot (1 - y_1)) \cdot B + (\sqrt{x_1} \cdot y_1) \cdot C)$ , kuri yra skirta apskaičiuoti tašką, kuris bus trikampio viduje.
 
   
 **Trečias žingsnis.** Sukuriame fuknciją, kuri atsitiktinai gautam skaičiui (1,2 arba 3) priskiria atitinkamą trikampio viršūnės tašką:
