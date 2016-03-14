@@ -1,0 +1,84 @@
+---
+title: "Task4"
+author: "Jūratė Dulkevičiūtė"
+date: "Wednesday, March 09, 2016"
+output: html_document
+---
+
+### Ketvirtoji užduotis
+Aplanke task4 yra duomenų failas, kuriame rasite nekilnojamo turto (o tiksliau gyvenamųjų butų) kainas ir kaikurias jų charakteristikas.
+Jūsų užduotis yra atlikti išsamią tiesinę regresiją. Lygtis reikalinga prekyboms agentams, kad geriau suprastų kokią
+įtaką skirtingos charakteristikos daro galutinei kainai.
+
+Nusistatome failo direktoriją, tada nusiskaitome duomenis. Bei pasidarome, kad galėtume pasiekti duomenis.
+```{r}
+setwd("~/GitHub/Econometrics/task4")
+datafull<-read.csv2("data.csv")
+attach(datafull)
+library(car)    # analizei mums reikės paketo "car" 
+```
+
+Nusibrėžiame duomenų grafiką. 
+```{r}
+plot(datafull)
+# Duomenų grafike matome, kad egzistuoja koreliacija tarp garso izoliacijos ir šilumos laidumo. 
+# Patikriname koreliaciją tarp garso izoliacijos ir šilumos laidumo.
+cor(garsoIzoliacija,silumosLaidumas)
+
+```
+Matome, kad tarp garso izoliacijos ir šilumos laidumo koreliacija yra 0.954, tai reiškia, kad duomenys yra priklausomi vienas nuo kito.
+
+
+Modeliuojame pirmą modelį, į jį įtraukiame visas charakteristikas.
+```{r}
+mod1=lm(kaina~plotas+aukstas+silumosLaidumas+garsoIzoliacija+atstumasIkiPrekybosCentro)
+vif(mod1)
+# Šilumos laidumo ir garso izoliacijos VIF > 10, tai rodo multikolinearumo problemą.
+summary(mod1)
+# Dėl multikolinearumo negalime pasitikėti šiuo modeliu. Modelis yra blogas.
+```
+
+Nors modelis blogas, bet naudodamiesi juo galime patikrinti ar egzistuoja išskirtys duomenyse. Tam naudosime **outlierTest**.
+```{r}
+outlierTest(mod1)             # Funkcija parodo, kad išskirtys yra 253 ir 254 eilutėse
+duom<-datafull[-c(253,254),]  # Panaikiname išsirtis 
+```
+
+
+Naudodami duomenis be išskirčių, kuriame antrąjį modelį, kuriame nėra garso izoliacijos ir trečiąjį be šilumos laidumo.
+```{r}
+mod2=lm(kaina~plotas+aukstas+silumosLaidumas+atstumasIkiPrekybosCentro,data=duom)
+summary(mod2)   # Matome, kad atstumas iki prekybos centro yra nereikšmingas(p-value=0.295 > 0.05)
+# Tikriname heteroskedastiškumą:
+ncvTest(mod2)   
+# p=0.098 > 0.05, tai reiškia, kad heteroskedastiškumo nėra
+
+mod3=lm(kaina~plotas+aukstas+garsoIzoliacija+atstumasIkiPrekybosCentro,data=duom)
+summary(mod3)   # Atstumas iki prekybos centro taip pat nereikšmingas (p-value=0.296 > 0.05)
+# Tikriname heteroskedastiškumą:
+ncvTest(mod3)
+# p=0.199 > 0.05, tai reiškia, kad heteroskedastiškumo nėra
+
+AIC(mod2);AIC(mod3)
+```
+Nors AIC mod3 yra mažesnė, visgi toliau tvarkysime mod2. Kadangi tikėtina, kad žmonės pirkdami butus labiau atsižvelgs
+į šilumos laidumą, nei į garso izoliaciją.
+
+Kadangi antrame modelyje, atstumas iki prekybos centro yra nereikšmingas, išmetame jį ir sudarome naują modelį:
+```{r}
+mod4=lm(kaina~plotas+aukstas+silumosLaidumas, data=duom)
+summary(mod4)   # Visi kintamieji yra reikšmingi
+# Tikriname ar nėra autokoreliacijos:
+durbinWatsonTest(mod4)
+# p-value > 0.05, tai reiškia, kad liekanos nėra autokoreliuotos.
+```
+
+```{r}
+AIC(mod2);AIC(mod4)
+# AIC'ė 4-ojo modelio yra mažesnė už 2-ojo, galima daryti išvadą, kad 4-asis modelis yra geresnis.
+```
+
+**Išvada.** 
+Galutiniu modeliu pasirenkame **mod4**. 4-uoju modeliu gauti įvertiniai reiškia, kad: plotui padidėjus 1 kv.m. kaina padidėja
+600 eurais, kiekvienas aukšto padidėjimas kainą padidina 318 eurais, kai vienetu padidėja šilumos laidumo koeficientas kaina
+padidėja 529 eurais. Laisvasis narys yra 8035.8 eurai. 
