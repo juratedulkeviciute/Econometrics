@@ -58,7 +58,14 @@ ncvTest(mod3)
 AIC(mod2);AIC(mod3)
 ```
 Nors AIC mod3 yra mažesnė, visgi toliau tvarkysime mod2. Kadangi tikėtina, kad žmonės pirkdami butus labiau atsižvelgs į šilumos laidumą, nei į garso izoliaciją.
-  
+
+Patikriname ar mod2 nėra išskirčių:
+```{r}
+outlierTest(mod2)       # Išskirtis 213 eilutėje
+qqPlot(mod2, id.n=1, envelope=0.95)    
+# Išskirtis patenka į pasikliautinąjį 95% intervalą, todėl ją paliekame
+```
+
 Kadangi antrame modelyje, atstumas iki prekybos centro yra nereikšmingas, išmetame jį ir sudarome naują modelį:
 ```{r}
 mod4<-lm(kaina~plotas+aukstas+silumosLaidumas, data=duom)
