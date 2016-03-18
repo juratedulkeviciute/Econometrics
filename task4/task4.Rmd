@@ -88,6 +88,11 @@ Dar patikriname mod4 paklaidų normalumą su Shapiro testu:
 ```{r}
 shapiro.test(mod4$res)
 #p-value = 0.073 > 0.05, vadinasi paklaidos yra normalios.
+#pažiūrime į liekanų histogramą:
+par(mfrow=c(1,1))
+hist(mod4$res, probability=TRUE, main="Liekanų histograma") #išbrėžiame histograma
+lines(density(mod4$res), col=4, lwd=2) #liekanų tankio grafikas
+#grafikas panašus į varpą, tai taip pat įrodo, kad paklaidos yra normalios.
 ```
     
 **Išvada.** 
