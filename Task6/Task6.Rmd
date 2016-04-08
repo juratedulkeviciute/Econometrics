@@ -1,0 +1,71 @@
+---
+title: "Task 6"
+author: "Jūratė Dulkevičiūtė"
+date: "Tuesday, April 05, 2016"
+output: html_document
+---
+
+###TASK 6
+
+####UŽDUOTIS:
+  Use the Dow Jones index (data set dowjones) to do the following:   
+(a) Produce a time plot of the series.  
+(b) Produce forecasts using the drift method and plot them.  
+(c) Show that the graphed forecasts are identical to extending the line drawn between the ﬁrst and last observations.   
+(d) Try some of the other benchmark functions to forecast the same data set. Which do you think is best? Why?  
+
+```{r, message=FALSE}
+#install.packages("fpp") # Jeigu dar neturime šio paketo, tai įsiinstaliuojame jį
+library(fpp)
+```
+
+**(a)** dowjones - mūsų nagrinėjami duomenys. Išbrėžiame duomenų grafiką. 
+```{r}
+head(dowjones)
+plot(dowjones, main="Duomenų Dow Jones grafikas", ylab="Duomenys", xlab="Laikas", col="darkgreen", lwd=2 )
+```
+
+**(b)** Brėžiame prognozę remiantis drift metodu:
+```{r}
+plot(rwf(dowjones, drift=TRUE, h=20), main="Drift metodo grafikas", ylab="Duomenys", xlab="Laikas", col="darkgreen", lwd=2)
+```
+Drif metodo prognozė remiasi paskutine duomenų reikšme plius vidutinis pokytis. Kadangi duomenyse matomas reikšmių kilimas, 
+tai drift prognuozuoja tolesnį augimą. Logiškai šis motodas nėra tinkamiausias, nes nuo 60 iki 80, matomas kritimas,
+o metodas prognozuoja gana gerą augimą tarsi ignoruodamas esamą nuosmukį. 
+
+**(c)** Brėžiame liniją tarp pirmos ir paskutinės reikšmės:
+```{r}
+x1<- 1
+x2<- 78
+y1<-dowjones[1]   # pirmoji reikšmė 
+y2<-dowjones[78]  # 28-oji reikšmė
+plot(rwf(dowjones, drift=TRUE, h=20), main="Drift metodo grafikas", ylab="Duomenys", xlab="Laikas", col="darkgreen", lwd=2)
+# Funkcija segments išbrėš liniją tarp pirmo ir paskutinio taško:
+segments(x1, y1, x2, y2, lwd=2, col=2) 
+```
+Taigi matome, kad drift metodas iš tiesų yra tiesės, gautos sujungiant pirmą ir paskutinį taškus, tęsinys.
+
+**(d)** Brėšime prognozes naudodami naive, mean, drift metodus.
+```{r}
+plot(dowjones, main="Duomenų Dow Jones grafikas", ylab="Duomenys", xlab="Laikas", col="darkgreen", lwd=2, xlim=c(0,100) )
+
+#Mean metodas:
+lines(meanf(dowjones, h=20)$mean, col="blue", lwd=2)
+
+#Naive metodas:
+lines(naive(dowjones, h=20)$mean, col=2, lwd=2)
+
+#Drift metodas:
+lines(rwf(dowjones, drift=T, h=20)$mean, col=6, lwd=2)
+
+#Seasonal metodas
+#lines(snaive(dowjones, h=20)$mean,col="green",lwd=2)
+#Šiuo atveju naudoti seasonal metodą nėra tikslinga, nes duomenyse nėra jokio sezoniškumo.
+#Tikrinant, prognozė gaunama tokia pati kaip ir naudojant naive metodą.
+
+legend("topleft", legend=c("Mean", "Naive", "Drift"), col=c("blue", 2, 6), lwd=2)
+```
+Manau geriausia prognoze galėtume laikyti **naive** metodu gautą prognozę. Prognozė gaunama imant paskutinę žinomą reikšmę,
+todėl tai galėtų būti tiksliausia prognuozojant trumpam laikotarpiui.
+**Mean** metodo prognoze vargu ar galėtume pasikliauti, nes prognozuojamas labai staigus kritimas.
+Apie **drift** metodą jau aiškinomės b) dalyje. 
