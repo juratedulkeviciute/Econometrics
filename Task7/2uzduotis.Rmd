@@ -69,7 +69,7 @@ H1: liekanos nėra baltasis triukšmas.
 Box.test(resim, fitdf=0, type="Lj")
 ```
   
-p-value > 0.05 => H0 atmetame, vadinasi liekanos yra baltasis triukšmas, to mes ir tikėjomės.
+p-value > 0.05 => H0 priimame, vadinasi liekanos yra baltasis triukšmas, to mes ir tikėjomės.
   
    
      
@@ -97,4 +97,4 @@ H1: liekanos nėra baltasis triukšmas.
 Box.test(resh, fitdf=0, type="Lj")
 ```
   
-p-value < 0.05 => H0 priimame, vadinasi liekanos nėra baltasis triukšmas. Tai patvirtina mūsų spėjimą.
+p-value < 0.05 => H0 atmetame, vadinasi liekanos nėra baltasis triukšmas. Tai patvirtina mūsų spėjimą.
