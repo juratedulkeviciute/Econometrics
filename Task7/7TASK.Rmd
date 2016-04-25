@@ -51,10 +51,7 @@ ________________________________________________________________________________
 **(b)** Compute the residuals and plot their ACF. Do the residuals appear to be white noise? What did your forecasting method miss?  
 **(c)** Do a Ljung-Box test on the residuals. What do the results mean?   
 
-```{r, message=FALSE}
-library(fpp)
-```
-  
+
   
 ####Nagrinėsime **bricksq** duomenis:  
 **(a)** Naudojame naive ir seasonal prognozavimo metodus:
@@ -154,9 +151,7 @@ f1 <- meanf(bricks1) accuracy(f1,bricks2)
 For example res <- residuals(f1) plot(res) hist(res, breaks="FD") Acf(res)  
 Do the residuals appear to be uncorrelated and normally distributed?  
 
-```{r, message=FALSE}
-library(fpp)
-```
+
 
 **(a)** Duomenis išskiriame į dvi dalis:
 ```{r}
