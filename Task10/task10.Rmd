@@ -1,0 +1,175 @@
+---
+title: "Task 10"
+author: "Jūratė Dulkevičiūtė"
+date: "Tuesday, April 19, 2016"
+output: html_document
+---
+
+### Task 10
+### Pirma užduotis.  (Hyndman 2014, ch. 3., Lab Session 3)
+
+###**Sąlyga:**
+For this exercise, use the price of a dozen eggs in the United States from 1900–1993 (data set eggs).
+Experiment with the various options in the holt() function to see how much the forecasts change with damped or exponential trend.
+Also try changing the parameter values for α and β to see how they aﬀect the forecasts. 
+Try to develop an intuition of what each parameter and argument is doing to the forecasts.   
+[Hint: use h=100 when calling holt() so you can clearly see the diﬀerences between the various options when plotting the forecasts.]   
+Which model gives the best RMSE? Do the residuals from the best model look like white noise?
+  
+    
+```{r, message=FALSE}
+library(fpp)  # užduočiai atlikti reikės fpp paketo.
+```
+  
+#### **1.**  Pirmiausia pažiūrime, kaip atrodo mūsų duomenys.
+```{r}
+head(eggs)
+plot(eggs)
+```
+  
+Iš grafiko matome, kad duomenys turi mažėjantį trendą.   
+   
+#### **2.1.** Prognozuojam 100 metų į priekį su **exponential trend** metodu:
+```{r}
+pirm<-holt(eggs, exponential=TRUE, h=100)
+plot(pirm)
+lines(pirm$fitted, col=3)
+```
+    
+Žalia linija rodo, kaip turimi duomenys šiuo metodu buvo įvertinti. Metodas įvertina mažėjantį trendą,
+jis prognozuoja kiaušinių kainos eksponentišką kritimą, prognozė lėtai gęsta.
+  
+#### **2.2.** Prognozuojam 100 metų į priekį su **additive damped trend** metodu:
+```{r}
+antr<-holt(eggs, h=100,damped=TRUE, alpha=0.9)
+plot(antr)
+lines(antr$fitted, col=3)
+```
+  
+Žalia linija rodo, kaip turimi duomenys šiuo metodu buvo įvertinti. Šis metodas duoda prognozę, lygią paskutinei turimai reikšmei.  
+  
+#### **2.3.** Prognozuojam 100 metų į priekį su **Holt’s local trend** metodu:
+```{r}
+tre<-holt(eggs, h=100, alpha=0.8)
+plot(tre)
+lines(tre$fitted, col=3)
+```
+  
+Žalia linija rodo, kaip turimi duomenys šiuo metodu buvo įvertinti. Šio metodo prognozė krenta greitai. 
+Logiškai mąstant modelis nėra tinkamas, nes prognozuoja neigiamą kiaušinių kainą. 
+  
+#### **2.4.** Prognozuojam 100 metų į priekį su **Holt’s local trend** metodu:
+```{r}
+ketv<-holt(eggs, h=100, alpha=0.6, beta=0.1)
+plot(ketv)
+lines(ketv$fitted, col=3)
+```
+  
+Žalia linija rodo, kaip turimi duomenys šiuo metodu buvo įvertinti. Pasirinkus parametrus $\alpha=0.6$ ir $\beta=0.1$ 
+gaunama staigesnį prognozės kritimą, nei prieš tai buvusio modelio. Tačiau vėl, modelis nėra logiškas, dėl neigiamos kiaušinių kainos.
+
+* Norėdami pamatyti visų prognozių skirtumus, galime išsibrėžti viską viename grafike:
+```{r}
+plot(eggs, xlim=c(1900, 2100), ylim=c(-100,400),main="Tuzino kiaušinių kainos prognozės")
+lines(pirm$mean, col=2)
+lines(antr$mean, col=3)
+lines(tre$mean, col=4)
+lines(ketv$mean, col=5)
+legend("topright",lty=1,lwd="1",col=c(2,3,4,5),legend=c("exponential trend metodas","damped trend metodas",
+"Holt’s local trend metodas, alfa=0.8","Holt’s local trend metodas, alfa=0.6, beta=0.1"),cex=0.5)
+```
+
+#### **3.** Lyginame prognozių tikslumą pagal RMSE: 
+```{r}
+accuracy(pirm)[2]; accuracy(antr)[2]; accuracy(tre)[2]; accuracy(ketv)[2]  
+```
+  Pirmojo metodo RMSE mažiausias, todėl jis galimai geriausias iš keturių.
+  
+#### **4.** Tiriame pirmojo modelio liekanas:
+```{r}
+res_pr<-residuals(pirm)
+acf(res_pr)
+```
+  
+Iš ACF grafiko galime manyti, kad greičiausiai liekanos bus baltasis triukšmas. Vienas stulpelis išeina virš mėlynos linijos,
+tačiau taip gali būti, kadangi turime 95% reikšmingumo lygmenį.  
+  
+* Ar liekanos yra baltasis triukšmas?
+```{r}
+# H0: liekanos yra baltasis triukšmas;
+# H1: liekanos nėra baltasis triukšmas.
+Box.test(res_pr, fitdf=0, type="Lj")
+#p-value > 0.05 => H0 priimame.
+```
+Liekanos yra baltasis triukšmas.  
+Taigi modelis su eksponentiniu trendu yra visai geras.
+___________________________________________________________________________________________________
+
+### Antra užduotis.  (Hyndman 2014, ch. 3., Lab Session 3)
+
+###**Sąlyga:**
+For this exercise, use the monthly Australian short-term overseas visitors data, May 1985–April 2005. (Data set: visitors.)   
+**(a)** Make a time plot of your data and describe the main features of the series.  
+**(b)** Forecast the next two years using Holt-Winters’ multiplicative method.  
+**(c)** Why is multiplicative seasonality necessary here?  
+**(d)** Experiment with making the trend exponential and/or damped.  
+**(e)** Compare the RMSE of the one-step forecasts from the various methods. Which do you prefer?   
+**(f)** Check that the residuals from the best model look like white noise.
+  
+```{r, message=FALSE}
+library(fpp)
+```
+  
+**(a)** Išsinagrinėjame kokius duomenis turime:
+```{r}
+plot(visitors)
+tsdisplay(visitors, plot.type="scatter")
+```
+  
+Iš visų grafikų galime daryti išvadą, kad duomenys turi kylantį trendą, tačiau jis yra gęstantis. 
+Taip pat duomenys yra sezoniški. Sezoniškumas yra kasmetinis.
+  
+**(b)** Prognizuojame du metus į priekį naudojant Holt-Winters multiplicative metodą:
+```{r}
+prog <- hw(visitors, seasonal="mult",h=24)
+plot(prog)
+lines(prog$fitted, col=2)
+```
+  
+Raudona linija rodo, kaip šis metodas įvertino turimus duomenis. Mėlyna spalva yra prognozė.  
+  
+**(c)** Būtinas, kadangi einant metams didėja reikšmių svyravimai (sezoniškumo "bangos" ilgėja).
+    
+**(d)** Pasidarome prog2 su eksponentiniu trendu ir prog3 su damped trendu.
+```{r}
+prog2<-hw(visitors, seasonal="mult",h=24, exponential=TRUE)
+plot(prog2)
+lines(prog2$fitted, col=2)
+
+prog3<-hw(visitors, seasonal="mult",h=24, damped = TRUE)
+plot(prog3)
+lines(prog3$fitted, col=2)
+```
+  
+Iš grafikų galime manyti, kad prognozė su *damped* trendu yra geresnė. Atsižvelgiant į tai, kad trendas yra
+linkęs gesti, ši prognozė yra tinkama. Tuo tarpu prognozė su *exponential* trendu, duoda mums augančiaS reikšmes.
+Taigi, tikėtina, kad ši prognozė nėra pati tinkamiausia.
+
+**(e)**  Tikriname RMSE gautų trijų prognozių:
+```{r}
+accuracy(prog)[2]; accuracy(prog2)[2]; accuracy(prog3)[2]
+```
+Mažiausią RMSE turi prog3, tagi šis modelis yra tikėtinai geras. To mes ir tikėjomės.
+
+**(f)** Tiriame liekanas:
+```{r}
+res<-residuals(prog3)
+acf(res)  # Tikėtina, kad bus baltasis triukšmas.
+# Ar liekanos yra baltasis triukšmas?
+# H0: liekanos yra baltasis triukšmas;
+# H1: liekanos nėra baltaisi triukšmas.
+Box.test(res, fitdf=0, type="Lj")
+#p-value > 0.05 => H0 priimame.
+```
+Liekanos yra baltasis triukšmas. O tai yra ženklas, kad modelis yra visai geras.
+
