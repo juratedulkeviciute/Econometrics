@@ -1,0 +1,242 @@
+---
+title: "Task 7"
+author: "Jūratė Dulkevičiūtė"
+date: "Monday, April 25, 2016"
+output: html_document
+---
+
+### Task 7 
+###1 užduotis
+
+**Sąlyga:**  The function tsdisplay(data, plot.type="scatter") is useful for showing a time plot, ACF plot and lagged scatterplot on the same graph. Use it to produce plots of the following time series: bricksq, hsales, ibmclose. Can you spot the eﬀects of seasonality, cyclicity and trend?
+
+```{r, message=FALSE}
+library(fpp)
+```
+
+Nagrinėsime **bricksq** duomenis:
+```{r}
+tsdisplay(bricksq, plot.type="scatter")
+```
+  
+* Sezoniškumas: matome kasmetinį sezoniškumą (maži kalniukai).  
+* Cikliškumas: galime patebėti ciklus apie 1963 - 1975 metus, 1975 - 1983 metus ir 1983 - 1991 metus.    
+* Trendas: iš grafiko galime teigti, kad trendas greičiausiai yra kylantis.  
+* AFC: AFC grafikas patvirtina, kad yra trendas ir sezoniškumas.  
+  
+Nagrinėsime **hsales** duomenis:
+```{r}
+tsdisplay(hsales, plot.type="scatter")
+```
+  
+* Sezoniškumas: matomas kasmetinis sezoniškumas (smailūs kalneliai).  
+* Cikliškumas: galimi ciklai 1975 - 1983 metais,  1983 - 1991 metais, nuo 1991 dar vienas ciklas.     
+* Trendas: aiškaus trendo nėra. 
+    
+Nagrinėsime **ibmclose** duomenis:    
+```{r}
+tsdisplay(ibmclose, plot.type="scatter")
+```
+  
+* Sezoniškumas: sezoniškumo nesimato. 
+* Cikliškumas: galime manyti, kad ciklai yra  0 - 50, 50-90, 90-180, 180-270 ir nuo 270, nors jie nėra labai ryškūs ir aiškūs.     
+* Trendas: trendo nėra. 
+
+__________________________________________________________________________________________________
+
+### 2 užduotis
+
+**Sąlyga:** For each of the same series (bricksq, ibmclose, hsales):  
+**(a)** Use either the naive or seasonal naive forecasting method and apply it to the full data set.  
+**(b)** Compute the residuals and plot their ACF. Do the residuals appear to be white noise? What did your forecasting method miss?  
+**(c)** Do a Ljung-Box test on the residuals. What do the results mean?   
+
+```{r, message=FALSE}
+library(fpp)
+```
+  
+  
+####Nagrinėsime **bricksq** duomenis:  
+**(a)** Naudojame naive ir seasonal prognozavimo metodus:
+```{r}
+plot(rwf(bricksq, h=20))
+plot(snaive(bricksq, h=20))
+```
+  
+Tikėtina, kad geresnę prognozę pateikia seasonal metodas, kadangi jis atkreipia dėmesį į duomenyse esantį sezoniškumą.
+
+**(b)** Skaičiuosime ir nagrinėsime liekanas:
+```{r}
+resbr <- residuals(snaive(bricksq, h=20))
+Acf(resbr)
+```
+  
+AFC grafike matome reikšmingą autokoreliaciją laguose 1,2,3,5,6,7,8,9,10,17,18,19 (jie yra virš mėlynos punktyrinės linijos). Taigi liekanos tikrai nėra baltasis triukšmas. Prognozė neįvertina esančio trendo ir cikliškumo.
+
+**(c)** Naudosime Ljung-Box testą, kuris patikrins ar liekanos yra baltasis triukšmas.   
+H0: liekanos yra baltasis triukšmas,  
+H1: liekanos nėra baltasis triukšmas.  
+```{r}
+Box.test(resbr, fitdf=0, type="Lj")
+```
+  
+p-value < 0.05 => H0 atmetame, vadinasi liekanos nėra baltasis triukšmas, to mes ir tikėjomės.
+  
+    
+####Nagrinėsime **ibmclose** duomenis:  
+**(a)** Naudojame naive ir seasonal prognozavimo metodus:
+```{r}
+plot(rwf(ibmclose, h=20))
+plot(snaive(ibmclose, h=20))
+```
+  
+Šiuo atveju tikslinga būtų naudoti naive metodą, kadangi ibmclose duomenyse sezoniškumo nėra.
+
+**(b)** Skaičiuosime ir nagrinėsime liekanas:
+```{r}
+resim <- residuals(rwf(ibmclose, h=20))
+Acf(resim)
+```
+  
+Tikėtina, kad liekanos panašios į baltąjį triukšmą, nes tik keli lagai kerta liniją.
+
+**(c)** Naudosime Ljung-Box testą, kuris patikrins ar liekanos yra baltasis triukšmas.   
+H0: kad liekanos yra baltasis triukšmas,  
+H1: liekanos nėra baltasis triukšmas.  
+```{r}
+Box.test(resim, fitdf=0, type="Lj")
+```
+  
+p-value > 0.05 => H0 priimame, vadinasi liekanos yra baltasis triukšmas, to mes ir tikėjomės.
+  
+   
+     
+####Nagrinėsime **hsales** duomenis:  
+**(a)** Naudojame naive ir seasonal prognozavimo metodus:
+```{r}
+plot(rwf(hsales, h=20))
+plot(snaive(hsales, h=20))
+```
+  
+Šiuo atveju tikslinga būtų naudoti seasonal metodą, kadangi jis atsižvelgia į duomenyse esantį sezoniškumą.
+
+**(b)** Skaičiuosime ir nagrinėsime prognozės liekanas:
+```{r}
+resh <- residuals(rwf(hsales, h=20))
+Acf(resh)
+```
+  
+Iš ACF grafiko matone, kad liekanos nėra panašios į baltąjį triukšmą. Yra lagų, kurie smarkiai kerta liniją ir turi reikšmingą autokoreliaciją. Prognozės pagerinimui reiktų pridėti duomenų cikliškumą. 
+  
+**(c)** Naudosime Ljung-Box testą, kuris patikrins ar liekanos yra baltasis triukšmas.   
+H0: liekanos yra baltasis triukšmas,  
+H1: liekanos nėra baltasis triukšmas.  
+```{r}
+Box.test(resh, fitdf=0, type="Lj")
+```
+  
+p-value < 0.05 => H0 atmetame, vadinasi liekanos nėra baltasis triukšmas. Tai patvirtina mūsų spėjimą.
+
+_______________________________________________________________________________________________
+
+### 3 UŽDUOTIS
+
+**Sąlyga:** For the data set bricksq:  
+**(a)** Split the data into two parts using:  
+bricks1 <- window(bricksq, end=1987.99), bricks2 <- window(bricksq, start=1988)   
+**(b)** Check that your data have been split appropriately by producing the following plot.  
+plot(bricksq) lines(bricks1,col="red") lines(bricks2,col="blue")   
+**(c)** Calculate forecasts using each of the four benchmark methods applied to bricks1.   
+**(d)** Compare the accuracy of your forecasts against the actual values stored in bricks2. For example:  
+f1 <- meanf(bricks1) accuracy(f1,bricks2)  
+**(e)** Which method does best? Why?  
+**(f)** For the best method, compute the residuals and plot them.   
+For example res <- residuals(f1) plot(res) hist(res, breaks="FD") Acf(res)  
+Do the residuals appear to be uncorrelated and normally distributed?  
+
+```{r, message=FALSE}
+library(fpp)
+```
+
+**(a)** Duomenis išskiriame į dvi dalis:
+```{r}
+bricks1 <- window(bricksq, end=1987.99)
+bricks2 <- window(bricksq, start=1988) 
+```
+
+**(b)** Išsibrėžiame duomenis. Raudona spalva pirmoji duomenų dalis, mėlyna - antroji:
+```{r}
+plot(bricksq, main="bricksq duomenų grafikas", xlab="laikas")
+lines(bricks1,col="red", lwd=2)
+lines(bricks2,col="blue", lwd=2) 
+legend("topleft", legend=c("iki 1987.99m.", "nuo 1988m."), col=c(2,"blue"), lwd=2, cex=0.7)
+```
+
+**(c)**  Suskaičiuojame prognozes bricks1 duomenims keturiais metodais:
+```{r}
+frc1 <- meanf(bricks1, h=27)            # vidurkio metodas
+frc2 <- naive(bricks1, h=27)            # naive metodas
+frc3 <- snaive(bricks1,h=27)            # seasonal metodas
+frc4 <- rwf(bricks1, drift=TRUE, h=27)  # drift metodas
+```
+Galime pasižiūrėti, kaip šios prognozės atrodo vizualiai:
+```{r}
+plot(bricks1, main="bricks1 duomenų prognozių grafikas", ylab="Duomenys", xlab="Laikas", col=2, lwd=2, xlim=c(1957,1995) )
+
+#Seasonal metodas:
+lines(frc3$mean,col="green",lwd=2)
+
+#Mean metodas:
+lines(frc1$mean, col="blue", lwd=2)
+
+#Naive metodas:
+lines(frc2$mean, col=9, lwd=2)
+
+#Drift metodas:
+lines(frc4$mean, col=6, lwd=2)
+
+legend("topleft", legend=c("Seasonal","Mean", "Naive", "Drift"), col=c("green","blue", 9, 6), lwd=2,cex=0.7)
+```
+  
+Tikėtina, kad geriausia prognozė yra **seasonal**.  
+
+**(d)** Žiūrime prognozių tikslumą:
+```{r}
+# Lygina tikrasias reiksmes su modelio reiksmemis:
+accuracy(frc1,bricks2)
+accuracy(frc2,bricks2)
+accuracy(frc3,bricks2)
+accuracy(frc4,bricks2)
+```
+
+**(e)** Iš **d** dalies matome, kad geriausiai prognozuoja **seasonal** metodas, jo **Test set** RMSE, MAE, MAPE, MASE yra mažiausi palyginus su kitų metodų. Lyginant **Training set** gauname, kad geriausias metodas būtų **drift**, nes jis atsižvelgia į ilgalaikį reiškmių kilimą (iki 1983m.), tačiau neatsižvelgia į kritimą, todėl drift metodas nėra pats geriausias. Taigi, geriausiu metodu pasirenkame **seasonal**.
+  
+Galime pasižiūreti kaip atrodo prognozės palyginus su tikrosiomis reikšmėmis:
+```{r}
+plot(bricksq, main="bricksq duomenų ir prognozių grafikas", ylab="Duomenys", xlab="Laikas", col=2, lwd=2, xlim=c(1957,1995) )
+#Seasonal metodas:
+lines(frc3$mean,col="green",lwd=2)
+
+#Mean metodas:
+lines(frc1$mean, col="blue", lwd=2)
+
+#Naive metodas:
+lines(frc2$mean, col=9, lwd=2)
+
+#Drift metodas:
+lines(frc4$mean, col=6, lwd=2)
+```
+  
+Iš šio grafiko taip pat galima manyti, kad **seasonal** metodas šiems duomenims yra geriausias.
+  
+**(f)** Nagrinėsime liekanas: 
+```{r}
+res <- residuals(frc3)
+plot(res)
+hist(res, breaks="FD")  # iš grafiko panašu, kad liekanos yra normaliai pasiskirsčiusios.
+shapiro.test(res)       # tačiau pritaikę testą gauname, kad p-value yra labai maža, taigi liekanos nėra normalios.
+Acf(res)  # liekanos yra autokoreliuotos, nes 1,2,5,6... lagai užeiną už mėlynos linijos.
+# Patikrinsime ar liekanos yra baltasis triukšmas:
+Box.test(res, fitdf=0, type="Lj") 
+# p-value < 0.05 => priimame H1, tai yra - liekanos nėra baltasis triukšmas.
+```
