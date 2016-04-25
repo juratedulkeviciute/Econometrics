@@ -29,6 +29,7 @@ plot(dowjones, main="Duomenų Dow Jones grafikas", ylab="Duomenys", xlab="Laikas
 ```{r}
 plot(rwf(dowjones, drift=TRUE, h=20), main="Drift metodo grafikas", ylab="Duomenys", xlab="Laikas", col="darkgreen", lwd=2)
 ```
+  
 Drif metodo prognozė remiasi paskutine duomenų reikšme plius vidutinis pokytis. Kadangi duomenyse matomas reikšmių kilimas, 
 tai drift prognuozuoja tolesnį augimą. Logiškai šis motodas nėra tinkamiausias, nes nuo 60 iki 80, matomas kritimas,
 o metodas prognozuoja gana gerą augimą tarsi ignoruodamas esamą nuosmukį. 
@@ -43,6 +44,7 @@ plot(rwf(dowjones, drift=TRUE, h=20), main="Drift metodo grafikas", ylab="Duomen
 # Funkcija segments išbrėš liniją tarp pirmo ir paskutinio taško:
 segments(x1, y1, x2, y2, lwd=2, col=2) 
 ```
+  
 Taigi matome, kad drift metodas iš tiesų yra tiesės, gautos sujungiant pirmą ir paskutinį taškus, tęsinys.
 
 **(d)** Brėšime prognozes naudodami naive, mean, drift metodus.
@@ -65,6 +67,7 @@ lines(rwf(dowjones, drift=T, h=20)$mean, col=6, lwd=2)
 
 legend("topleft", legend=c("Mean", "Naive", "Drift"), col=c("blue", 2, 6), lwd=2)
 ```
+  
 Manau geriausia prognoze galėtume laikyti **naive** metodu gautą prognozę. Prognozė gaunama imant paskutinę žinomą reikšmę,
 todėl tai galėtų būti tiksliausia prognuozojant trumpam laikotarpiui.
 **Mean** metodo prognoze vargu ar galėtume pasikliauti, nes prognozuojamas labai staigus kritimas.
