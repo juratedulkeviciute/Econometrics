@@ -76,7 +76,9 @@ for(i in 48:(n-1))
 sqrt(mean(e^2,na.rm=TRUE)) 
 ```
   
-Su šiuo ciku, gauname RMSE = 18.08962  , kuris yra didesnis, negu prieš tai.
+Su šiuo ciku, gauname RMSE = 18.08962  , kuris yra didesnis, negu prieš tai.  Čia paklaidos yra skaičiuojamos
+tarp prognozės ir žinomų reikšmių.
+
 
 **(c)** 
 Pakeitus, `train <- ts(visitors[1:i],freq=12)` į `train <- visitors[1:i]`, tampa neįmanoma suskaičiuoti 
