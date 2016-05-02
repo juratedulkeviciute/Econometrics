@@ -1,0 +1,167 @@
+---
+title: "Task 13"
+author: "Jūratė Dulkevičiūtė"
+date: "Saturday, April 23, 2016"
+output: html_document
+---
+
+### Task 13
+### Pirma užduotis.  [@Hyndman2014a, ch. 6., Lab Session 6]
+
+###**Sąlyga:**
+For the following series, ﬁnd an appropriate Box-Cox transformation and order of diﬀerencing in order to obtain stationary data.  
+**(a)** usnetelec  
+**(b)** usgdp  
+**(c)** mcopper  
+**(d)** enplanements   
+**(e)** visitors  
+
+```{r,message=FALSE}
+library(fpp)
+```
+
+**(a)** Duomenys **usnetelec:**   
+```{r}
+plot(usnetelec)                     # Duomenys atrodo nesezoniniai              
+l1 <- BoxCox.lambda(usnetelec);l1   # Ieškome BoxCox transformacijos parametro
+duom1<-BoxCox(usnetelec, l1)        # Atliekame BoxCox transformaciją
+n1 <- ndiffs(duom1);n1              # Ieškome diferencijavimo eilės
+tran1<-diff(duom1,differences = n1) # Atliekame diferencijavimą 
+plot(tran1, col=2)                  # Nusibrėžiame transformuotus duomenis
+```
+  
+Patikrinsime, ar transformuoti duomenys yra stacionarūs su **Augmented Dickey Fuller test'u**    
+H0: duomenys yra nestacionarūs.
+```{r}
+adf.test(tran1)
+```
+p-value < 0.05 => taigi H0 atmetame. Transformuoti duomenys yra stacionarūs.
+
+**(b)** Duomenys **usgdp:**  
+```{r}
+plot(usgdp)                         # Duomenys atrodo nesezoniniai 
+Acf(usgdp)                          # Duomenys tikrai nesezoniški
+l2 <- BoxCox.lambda(usgdp);l2       # Ieškome BoxCox transformacijos parametro
+duom2<-BoxCox(usgdp, l2)            # Atliekame BoxCox transformaciją
+n2 <- ndiffs(duom2);n2              # Ieškome diferencijavimo eilės
+tran2<-diff(duom2,differences = n2) # Atliekame diferencijavimą 
+plot(tran2, col=2)                  # Nusibrėžiame transformuotus duomenis
+```
+  
+Patikrinsime, ar transformuoti duomenys yra stacionarūs su **Augmented Dickey Fuller test'u**  
+H0: duomenys yra nestacionarūs.
+```{r}
+adf.test(tran2)
+```
+p-value < 0.05 => taigi H0 atmetame. Transformuoti duomenys yra stacionarūs.
+  
+  
+**(c)** Duomenys **mcopper:**  
+```{r}
+plot(mcopper)                         # Duomenys atrodo nesezoniniai 
+Acf(mcopper)                          # Duomenys tikrai nesezoniški
+l3 <- BoxCox.lambda(mcopper);l3       # Ieškome BoxCox transformacijos parametro
+duom3<-BoxCox(mcopper, l3)            # Atliekame BoxCox transformaciją
+n3 <- ndiffs(duom3);n3                # Ieškome diferencijavimo eilės
+tran3<-diff(duom3,differences = n3)   # Atliekame diferencijavimą 
+plot(tran3, col=2)                    # Nusibrėžiame transformuotus duomenis
+```
+  
+Patikrinsime, ar transformuoti duomenys yra stacionarūs su **Augmented Dickey Fuller test'u**  
+H0: duomenys yra nestacionarūs.
+```{r}
+adf.test(tran3)
+```
+p-value < 0.05 => taigi H0 atmetame. Transformuoti duomenys yra stacionarūs.
+
+**(d)** Duomenys **enplanements:**  
+```{r}
+plot(enplanements)                         # Duomenys atrodo sezoniniai 
+Acf(enplanements, lag.max=100)             # Duomenys tikrai turi kasmetinį sezoniškukmą
+l4 <- BoxCox.lambda(enplanements);l4       # Ieškome BoxCox transformacijos parametro
+duom4<-BoxCox(enplanements, l4)            # Atliekame BoxCox transformaciją
+n4 <- nsdiffs(duom4);n4                    # Ieškome diferencijavimo eilės su dsdiffs (kuris skirtas                   sezoniškiems duomenims)
+tran4<-diff(duom4,differences = n4)        # Atliekame diferencijavimą 
+plot(tran4, col=2)                         # Nusibrėžiame transformuotus duomenis
+```
+  
+Patikrinsime, ar transformuoti duomenys yra stacionarūs su **Augmented Dickey Fuller test'u**  
+H0: duomenys yra nestacionarūs
+```{r}
+adf.test(tran4)
+```
+p-value < 0.05 => taigi H0 atmetame. Transformuoti duomenys yra stacionarūs.
+
+**(e)** Duomenys **visitors:**  
+```{r}
+plot(visitors)                         # Duomenys atrodo sezoniniai 
+Acf(visitors, lag.max=100)             # Duomenys tikrai turi kasmetinį sezoniškukmą
+l5 <- BoxCox.lambda(visitors);l5       # Ieškome BoxCox transformacijos parametro
+duom5<-BoxCox(visitors, l5)            # Atliekame BoxCox transformaciją
+n5 <- nsdiffs(duom5);n5                # Ieškome diferencijavimo eilės su dsdiffs (kuris skirtas                   sezoniškiems duomenims)
+tran5<-diff(duom5,differences = n5)    # Atliekame diferencijavimą 
+plot(tran5, col=2)                     # Nusibrėžiame transformuotus duomenis
+Acf(tran5)
+```
+  
+Patikrinsime, ar transformuoti duomenys yra stacionarūs su **Augmented Dickey Fuller test'u**
+H0: duomenys yra nestacionarūs ir nesezoniniai.
+```{r}
+adf.test(tran5)
+```
+p-value < 0.05 => taigi H0 atmetame. Transformuoti duomenys yra stacionarūs.
+
+* Taigi panaudojus Box-cox transformaciją ir diferencijavimą, duomenus gauname reguliaresnius ir stacionarius. Tai būdas, kuris parodo reikšmių pokytį, o ne bendrą augimą.
+
+
+____________________________________________________________________________________________________
+
+### Antra užduotis.  [@Hyndman2014a, ch. 6., Lab Session 6]
+
+###**Sąlyga:**
+Why is a Box-Cox transformation unhelpful for the **cangas** data?   
+  
+* Pažiūrime, kokie duomenys:
+```{r}
+plot(cangas)
+Acf(cangas)
+```
+  
+Bandome daryti Box-Cox transformaciją:
+```{r}
+l6<-BoxCox.lambda(cangas);l6      # randame transformacijos parametrą
+tran6<-BoxCox(cangas,lambda = l6) # pritaikome transformaciją
+plot(tran6, col=2)                # išsibrėžiame grafiką
+``` 
+  
+Iš grafiko matome, kad transformacija yra nepavykusi. Tikėtina, kad tai atsitiko dėl to, kad duomenys **cangas** yra banguoti, tai yra, iš pradžių didėja, tada apie 15 metų yra maždaug pastovūs, o tada vėl auga. Box Cox negali rasti tokios transformacijos, kuri tiktų visoms duomenų atkarpoms. 
+
+____________________________________________________________________________________________________
+
+### Trečia užduotis.  [@Hyndman2014a, ch. 6., Lab Session 6]
+
+###**Sąlyga:**
+Download the data at http://robjhyndman.com/data/retail.xls. Choose one of the series and ﬁnd an appropriate Box-Cox transformation and order of diﬀerencing in order to obtain stationary data.
+```{r}
+retail<-read.csv("retail2.csv", header = T)        # atsidarome duomenis
+data<-retail[,43]                                  # pasirenkame stulpelį, kurį norime nagrinėti
+datatime = ts(data, start=c(1982,4), frequency=12) # sudarom laiko eilutę 
+plot(datatime)                                     # išsibrėžiame grafiką
+# Tikėtina, kad duomenyts yra sezoniški, taip pat turi didėjantį trendą
+                         
+l <- BoxCox.lambda(datatime);l                   # Ieškome BoxCox transformacijos parametro
+duom6<-BoxCox(datatime, l)                       # Atliekame BoxCox transformaciją
+plot(duom6)
+Acf(duom6, lag.max = 40)                         # Duomenys sezoniški
+n <- nsdiffs(duom6);n                            # Ieškome diferencijavimo eilės su dsdiffs (kuris skirtas sezoniškiems duomenims)
+tran6<-diff(duom6,differences = n)               # Atliekame diferencijavimą 
+plot(tran6)                                      # Nusibrėžiame transformuotus duomenis
+```
+  
+Patikrinsime, ar transformuoti duomenys yra stacionarūs su **Augmented Dickey Fuller test'u**  
+H0: duomenys yra nestacionarūs
+```{r}
+adf.test(tran6)
+Acf(tran6)
+```
+p-value < 0.05 => taigi H0 atmetame. Transformuoti duomenys yra stacionarūs.
