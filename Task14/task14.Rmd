@@ -1,0 +1,380 @@
+---
+title: "Task 14"
+author: "Jūratė Dulkevičiūtė"
+date: "Tuesday, May 03, 2016"
+output: html_document
+---
+
+### Task 14
+### Pirma užduotis.  [@Hyndman2014a, ch. 7., Lab Session 7]
+
+###**Sąlyga:**
+For the **wmurders** data:  
+**(a)** if necessary, find a suitable Box-Cox transformation for the data;  
+**(b)** fit a suitable ARIMA model to the transformed data using
+auto.arima();  
+**(c)** try some other plausible models by experimenting with the
+orders chosen;  
+**(d)** choose what you think is the best model and check the residual
+diagnostics;  
+**(e)** produce forecasts of your fitted model. Do the forecasts look
+reasonable?  
+**(f)** compare the results with what you would obtain using ets()
+(with no transformation).  
+
+  
+```{r, message=FALSE}
+library(fpp)
+```
+
+**(a)**  Pažiūrėsime, kaip atrodo duomenys:
+```{r}
+plot(wmurders)
+```
+  
+Duomenyse nematyti jokio sezoniškumo, trendo ir cikliškumo.   
+Box-Cox transformacijos neatliksime, nes grafikas rodo reikšmių šuolius, tokiu atveju transformacija nieko naudingo neduos.
+ 
+**(b)** Ieškosime ARIMA modelio su **auto.arima()**
+```{r}
+fit<-auto.arima(wmurders, seasonal = F)
+fit
+```
+auto.arima parinko modelį ARIMA(1,2,1).
+
+**(c)** Acf ir Pacf grafikų analizei (tam kad nusistatytume argumentus), naudosime stacionarius duomenis: 
+```{r}
+kpss.test(wmurders)                     # duomenys nėra stacionarūs, p-value < 0.01
+n <- ndiffs(wmurders);n                 # diferenciavimo eilė
+kpss.test(diff(wmurders,differences=n)) # p-vaule > 0.05 H0 priimame. Duomenys yra stacionarūs.
+wmur<-diff(wmurders,differences=n)      # stacionarūs duomenys
+```
+
+* Pasibandome įvairius modelius:
+```{r}
+Acf(wmur, lag.max=20)  # grafikas panašus į sinusoidal, taigi tikėtina, kad q=0
+Pacf(wmur, lag.max=20) # Reikšmingas spike yra ant 1 (taigi greičiausiai p=1), arba gali būti ir p=5
+
+# Sudarom modelius:
+fit1<-Arima(wmurders,order=c(1,2,0))  # 1, nes pacf grefike reikšmingas spike
+fit2<-Arima(wmurders,order=c(5,2,0))  # 5, nes galimai reikšmingas pacf grafike
+fit3<-Arima(wmurders,order=c(0,2,2))  # 2, nes acf grafike reikšmingas spike
+```
+
+**(d)** Ieškosime, kuris modelis yra geriausias. Vienas iš būdų išsirinkti geriausią modelį yra lyginti jų AIC. Tai atlikti galime, kadangi visi modeliai yra sudaromi iš tų pačių duomenų.
+```{r}
+aic<- c(AIC(fit),AIC(fit1),AIC(fit2),AIC(fit3))
+modelis<-c("fit","fit1","fit2","fit3")
+data.frame(modelis,aic)
+```
+Pagal AIC matome, kad geriausias modelis yra fit.
+
+Kitas būdas tikrinti, kuris modelis yra geriausias - lyginti su **accuracy** funkcija.  
+Pažiūrėsime, ką gausime atlikus in sample ir out of sample:  
+```{r}
+wm = window(wmurders, end=1988)
+
+fit_in<-Arima(wm, order=c(1,2,1))
+fit1_in<-Arima(wm,order=c(1,1,0))
+fit2_in<-Arima(wm,order=c(5,2,0))
+fit3_in<-Arima(wm,order=c(0,2,2))
+
+f_in <- forecast(fit_in)
+f1_in <- forecast(fit1_in)
+f2_in <- forecast(fit2_in)
+f3_in <- forecast(fit3_in)
+
+ans_1 <- rbind(
+  accuracy(f_in),
+  accuracy(f1_in),
+  accuracy(f2_in),
+  accuracy(f3_in)
+)
+rownames(ans_1) <- c('fit_in', 'fit1_in', 'fit2_in', 'fit3_in')
+ans_1
+
+#out of sample
+
+ans_out = rbind(
+  accuracy(f_in,wmurders)[2,],
+  accuracy(f1_in,wmurders)[2,], 
+  accuracy(f2_in,wmurders)[2,],
+  accuracy(f3_in,wmurders)[2,]
+)
+rownames(ans_out) <- c('fit_out', 'fit1_out', 'fit2_out', 'fit3_out')
+ans_out
+```
+Gavome, kad in sample geriausias modelis yra fit2 , o out of sample geriausias fit1.
+
+Visgi geriausiu modeliu pasirenkame **fit2**.
+  
+* Pažiūrėsime modelio liekanas:  
+```{r}
+Acf(residuals(fit2))  # iš grafiko panašu, kad liekanos bu baltasis triukšmas
+# H0: liekanos yra baltasis triukšmas;
+# H1: liekanos nėra baltasis triukšmas.
+Box.test(residuals(fit2), type="Lj")
+```
+p-value>0.05 => H0 priimame. Liekanos yra baltasis triukšmas.
+
+**(e)** Pažiūrėsime, kaip atrodo prognozė:
+```{r}
+plot(forecast(fit2,h=20))
+```
+  
+Prognozė atrodo logiška, tikėtina, kad laikui bėgant nužudytų moterų skaičius mažės. Tačiau manau, kad mažėjimas neturėtų būti toks staigus.
+
+
+**(f)** Pažiūrėsim, ką gaunam naudojant ETS:
+```{r}
+fit_ets1 <- ets(wmurders);fit_ets1
+#Panaudojus ets(), gauname ETS(M,N,N) - multiplicative errors, nėra trendo, nėra sezoniškumo
+plot(forecast(fit_ets1, h=20))  
+# Prognozės skiriasi. ETS prognozuoja, kad nužudytų moterų skaičius stabilizuosis, o tai taip pat logiška.
+
+#Palyginsime modelių AIC:
+fit2[6];fit_ets1[2]
+#Palyginsime accuracy:
+accuracy(fit2);accuracy(fit_ets1)
+```
+Abiem atvejais geresnis modelis yra fit2, tai yra arima(5,2,0)
+
+____________________________________________________________________________________________________
+
+### Antra užduotis.  [@Hyndman2014a, ch. 7., Lab Session 7]
+
+### Atliksime tą pačią analizę **usgdp** duomenims.
+
+**(a)** Pažiūrėsime kaip atrodo duomenys:
+```{r}
+plot(usgdp)
+l <- BoxCox.lambda(usgdp);l   # Ieškome BoxCox transformacijos parametro
+duom<-BoxCox(usgdp, l)
+plot(duom,col=4, lwd=2)
+```
+  
+Duomenyse nematyti sezoniškumo ir cikliškumo. Trendas yra didėjantis.   
+Atlikus Box-Cox transformciją gauname "tiesesnį", taigi toliau analizuosime transformuotus duomenis.
+
+**(b)** Ieškosime ARIMA modelio su **auto.arima()**
+```{r}
+mod<-auto.arima(duom, seasonal = F)
+mod
+```
+auto.arima parinko modelį ARIMA(2,1,0).
+
+**(c)** Acf ir Pacf grafikų analizei (tam kad nusistatytume argumentus), naudosime stacionarius duomenis:  
+```{r}
+n2<-ndiffs(duom);n2                 # diferenciavimo eilė
+data1<-diff(duom,differences=n2)
+kpss.test(data1)                    # p-value > 0.05 H0 priimame. Duomenys stacionarūs.
+
+Acf(data1, lag.max=50)   # Acf grafikas šiek tiek  panašus į sinusoidal,
+Pacf(data1)              # Reikšmingas spike yra ant 12 (taigi greičiausiai p=12)
+```
+
+* Sudarom įvairius modelius:
+```{r}
+mod1<-Arima(duom,order=c(1,1,0));mod1
+mod2<-Arima(duom,order=c(12,1,0));mod2   # p=12, nes reikšmingas spike pacf grafike
+mod3<-Arima(duom,order=c(2,2,0));mod3    # p=2, nes reikšmingas spike acf grafike
+mod4<-Arima(duom,order=c(0,1,12));mod3   # q=12, nes galimai reikšmingas spike pacf grafike
+```
+
+**(d)** Ieškosime, kuris modelis yra geriausias. Vienas iš būdų išsirinkti geriausią modelį yra lyginti jų AIC. Tai atlikti galime, kadangi visi modeliai yra sudaromi iš tų pačių duomenų.
+```{r}
+aic_1<- c(AIC(mod),AIC(mod1),AIC(mod2),AIC(mod3),AIC(mod4))
+modelis1<-c("mod","mod1","mod2","mod3","mod4")
+data.frame(modelis1,aic_1)
+```
+Pagal AIC matome, kad geriausias modelis yra mod (t.y. modelis gautas su auto.arima funkcija).
+
+Kitas būdas tikrinti, kuris modelis yra geriausias - lyginti su **accuracy** funkcija.  
+Pažiūrėsime, ką gausime atlikus in sample ir out of sample:  
+```{r}
+dat = window(duom, end=1989)
+
+mod_in<-Arima(dat, order=c(2,1,0))
+mod1_in<-Arima(dat,order=c(1,1,0))
+mod2_in<-Arima(dat,order=c(12,1,0))
+mod3_in<-Arima(dat,order=c(2,2,0))
+mod4_in<-Arima(dat,order=c(0,1,12))
+
+m_in <- forecast(mod_in)
+m1_in <- forecast(mod1_in)
+m2_in <- forecast(mod2_in)
+m3_in <- forecast(mod3_in)
+m4_in <- forecast(mod4_in)
+ans_2 <- rbind(
+  accuracy(m_in),
+  accuracy(m1_in),
+  accuracy(m2_in),
+  accuracy(m3_in),
+  accuracy(m4_in)
+)
+rownames(ans_2) <- c('m_in', 'm1_in', 'm2_in', 'm3_in',"m4_in")
+ans_2
+
+#out of sample
+
+ans_out2 = rbind(
+  accuracy(m_in,duom)[2,],
+  accuracy(m1_in,duom)[2,], 
+  accuracy(m2_in,duom)[2,],
+  accuracy(m3_in,duom)[2,],
+  accuracy(m4_in,duom)[2,]
+)
+rownames(ans_out2) <- c('mod_out', 'mod1_out', 'mod2_out', 'mod3_out',"mod4_out")
+ans_out2
+```
+Gavome, kad in sample geriausias modelis yra mod2, o su out of sample gavome geriausias modelis yra gautas su auto.arima. 
+
+Atsižvelgiant į AIC ir accuracy geriausiu modeliu pasirenkame **mod**.
+  
+* Pažiūrėsime modelio liekanas:  
+```{r}
+Acf(residuals(mod))  # iš grafiko panašu, kad liekanos yra baltasis triukšmas
+# H0: liekanos yra baltasis triukšmas;
+# H1: liekanos nėra baltasis triukšmas.
+Box.test(residuals(mod), type="Lj")
+```
+p-value>0.05 => H0 priimame. Liekanos yra baltasis triukšmas.
+
+**(e)** Pažiūrėsima, kaip atrodo prognozė:
+```{r}
+plot(forecast(mod,h=50))
+```
+  
+Prognozė atrodo logiška, tikėtina, kad laikui bėgant JAV BVP augs.
+
+
+**(f)** Pažiūrėsim, ką gaunam naudojant ETS:
+```{r}
+mod_ets <- ets(usgdp);mod_ets
+#Panaudojus ets(), gauname ETS(A,A,N) - Damped trend method with additive errors
+
+plot(forecast(mod_ets, h=50))  
+# Prognozės panašios. Abu modeliai prognozuoja BPV pakilimą. Tačiau modelis gautas su ETS prognozuoja greitesnį augimą.
+
+#Lyginti modelių AIC negalime, nes naudojome transformuotus duomenis. Lyginsime modelių accuracy:
+accuracy(mod);accuracy(mod_ets)
+```
+Matome, kad arima modelio visi accuracy parametrai yra mažesnė, taigi tikėtina, kad ir prognozė yra geresnė.
+
+____________________________________________________________________________________________________
+
+### Trečia užduotis.  [@Hyndman2014a, ch. 7., Lab Session 7]
+
+### Atliksime tą pačią analizę **mcopper** duomenims.
+
+**(a)** Pažiūrėsime kaip atrodo duomenys:
+```{r}
+plot( mcopper)  
+l2 <- BoxCox.lambda( mcopper);l2   # Ieškome BoxCox transformacijos parametro
+data<-BoxCox( mcopper, l2)
+plot(data,col=4, lwd=2)            # Transformuotų duomenų grafikas
+```
+  
+Duomenyse matyti augimas ir staigus šuolis. Atlikus Box-Cox transformciją gauname mažesnius svyravimus, šuolis tampa nebe toks didelis. Taigi analizei naudosime transformuotus duomenis.
+
+**(b)** Ieškosime ARIMA modelio su **auto.arima()**
+```{r}
+model<-auto.arima(data, seasonal = F)
+model
+```
+auto.arima parinko modelį ARIMA(0,1,1).
+
+**(c)** Acf ir Pacf grafikų analizei (tam kad nusistatytume argumentus), naudosime stacionarius duomenis: 
+```{r}
+n3<-ndiffs(data);n3                # diferenciavimo eilė
+duo<-diff(data,differences=n3)
+kpss.test(duo)                     # p-value > 0.05 H0 priimame. Duomenys stacionarūs.
+
+Acf(duo, lag.max=50) # panašu, kad Acf grafikas yra sinusoidal, taigi tikėtina, kad tiks q=0
+Pacf(duo)            # Reikšmingas spike yra ant 2 (taigi greičiausiai p=2), bet gali būti ir p=7;18
+```
+
+* Sudarome modelius:
+```{r}
+model1<-Arima(data,order=c(1,1,0)) # 1, nes reikšmingas spike ant 1 acf grafike
+model2<-Arima(data,order=c(14,1,0))# 14, nes galimai reikšmingas spike acf grafike
+model3<-Arima(data,order=c(1,2,2)) 
+model4<-Arima(data,order=c(2,2,1))
+```
+
+**(d)** Ieškosime, kuris modelis yra geriausias. Vienas iš būdų išsirinkti geriausią modelį yra lyginti jų AIC. Tai atlikti galime, kadangi visi modeliai yra sudaromi iš tų pačių duomenų.
+```{r}
+aic_2<- c(AIC(model),AIC(model1),AIC(model2),AIC(model3),AIC(model4))
+modelis2<-c("model","model1","model2","model3","model4")
+data.frame(modelis2,aic_2)
+```
+Pagal AIC matome, kad geriausias modelis yra model (t.y. modelis gautas su auto.arima funkcija).
+
+Kitas būdas tikrinti, kuris modelis yra geriausias - lyginti su **accuracy** funkcija.  
+Pažiūrėsime, ką gausime atlikus in sample ir out of sample:  
+```{r}
+da = window(data, end=1992)
+
+model_in<-Arima(da, order=c(0,1,1))
+model1_in<-Arima(da,order=c(1,1,0))
+model2_in<-Arima(da,order=c(14,1,0))
+model3_in<-Arima(da,order=c(1,2,2))
+model4_in<-Arima(da,order=c(2,2,1))
+
+mo_in <- forecast(model_in)
+mo1_in <- forecast(model1_in)
+mo2_in <- forecast(model2_in)
+mo3_in <- forecast(model3_in)
+mo4_in <- forecast(model4_in)
+ans_3 <- rbind(
+  accuracy(mo_in),
+  accuracy(mo1_in),
+  accuracy(mo2_in),
+  accuracy(mo3_in),
+  accuracy(mo4_in)
+)
+rownames(ans_3) <- c('mo_in', 'mo1_in', 'mo2_in', 'mo3_in',"mo4_in")
+ans_3
+
+#out of sample
+
+ans_out3 = rbind(
+  accuracy(mo_in,duom)[2,],
+  accuracy(mo1_in,duom)[2,], 
+  accuracy(mo2_in,duom)[2,],
+  accuracy(mo3_in,duom)[2,],
+  accuracy(mo4_in,duom)[2,]
+)
+rownames(ans_out3) <- c('mod_out', 'mod1_out', 'mod2_out', 'mod3_out',"mod4_out")
+ans_out3
+```
+Lyginant su accuracy funkcija skirtumus tarp modelių gavome labai nežymius. Todėl atsižvelgiant į AIC geriausiu modeliu pasirenkame **model**, (t.y. modelį, kurį automatiškai parinko auto.arima)
+  
+* Pažiūrėsime modelio liekanas:  
+```{r}
+Acf(residuals(model))  # iš grafiko panašu, kad liekanos yra baltasis triukšmas
+# H0: liekanos yra baltasis triukšmas;
+# H1: liekanos nėra baltasis triukšmas.
+Box.test(residuals(model), type="Lj")
+```
+p-value>0.05 => H0 priimame. Liekanos yra baltasis triukšmas.
+
+**(e)** Pažiūrėsime, kaip atrodo prognozė:
+```{r}
+plot(forecast(model,h=100))
+```
+  
+Prognozė atrodo nelabai patikima, nes nėra tikslinga manyti, kad vario kaina bus konstanta einant metams.
+
+**(f)** Pažiūrėsim, ką gaunam naudojant ETS:
+```{r}
+model_ets <- ets(mcopper);model_ets
+#Panaudojus ets(), gauname ETS(M,Ad,N)
+
+plot(forecast(model_ets, h=100))  
+# Prognozės panašios, abu prognozuoja kainos stabilizaciją. ETS modelis dar parodo kaip kaina kris, kol stabilizuosis.
+
+#Lyginti modelių AIC negalime, nes naudojome transformuotus duomenis. Lyginsime modelių accuracy:
+accuracy(model);accuracy(model_ets)
+```
+Matome, kad arima modelio visi accuracy parametrai yra mažesnė, taigi tikėtina, kad ir prognozė yra geresnė.
