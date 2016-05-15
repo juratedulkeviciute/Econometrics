@@ -1,0 +1,124 @@
+---
+title: "Task 15"
+author: "Jūratė Dulkevičiūtė"
+date: "Saturday, May 14, 2016"
+output: html_document
+---
+
+### Task 15
+### Pirma užduotis.  [@Hyndman2014a, ch. 7., Lab Session 7]
+
+###**Sąlyga:**
+Time serie **uselec**:
+**(a)** Do the data need transforming? If so, find a suitable transformation.  
+**(b)** Are the data stationary? If not, find an appropriate differencing
+which yields stationary data.  
+**(c)** Identify a couple of ARIMA models that might be useful in describing
+the time series. Which of your models is the best according
+to their AIC values?  
+**(d)** Estimate the parameters of your best model and do diagnostic
+testing on the residuals. Do the residuals resemble white noise?
+If not, try to find another ARIMA model which fits better.  
+**(e)** Forecast the next 24 months of data using your preferred model.  
+**(f)** Compare the forecasts obtained using ets().  
+
+```{r,message=FALSE}
+library(fpp)
+```
+
+**(a)** Spręsime ar duomenims reikia transformacijos:
+```{r}
+plot(uselec)  # Yra sezoniškumas, kylantis trendas
+hist(uselec, probability = TRUE)  # Matome, kad nėra tiksliai normalaus skirstinio
+lines(density(uselec), col=4, lwd=2)
+lambda<-BoxCox.lambda(uselec)  # Ieškome transformacijos parametro
+duom<-BoxCox(uselec,lambda)    # Transformuojame duomenis
+plot(duom, col=4, lwd=2)       # Transformuotų duomenų grafikas
+hist(duom, probability = TRUE) # transformavus duomenis matome, kad panašu, jog jie turi normalųjį skirstinį. Taigi transformacija yra naudinga.
+lines(density(duom), col=4, lwd=2)
+```
+
+**(b)** Tikrinsime ar duomenys yra stacionarūs:
+```{r}
+# Iš grafiko matyti, kad duomenys nėra stacionarūs, nes yra trendas ir sezoniškumas. Tuo įsitikinsime atlikus testą:
+# H0: duomenys stacionarūs;
+# H1: duomenys nėra stacionarūs
+kpss.test(duom)
+#p-value < 0.05, taigi H0 atmetame. Duomenys nėra stacionarūs.
+```
+Ieškosime diferencijavimo eilės:
+```{r}
+n <- nsdiffs(duom);n  # diferenc. eilės ieškome su nsdiffs, nes turime sezoninius duomenis
+data <- diff(duom, diff = n, lag=12)
+plot(data, col=2)
+# Patikrinsim ar stacionarūs duomenys:
+kpss.test(data)
+# p-value > 0.05, H0 priimame. Duomenys stacionarūs.
+```
+Dabar gauti duomenys yra stacionarūs.
+
+**(c)** Kursime arima modelius:
+```{r}
+tsdisplay(data)
+
+autofit <- auto.arima(duom);autofit # gauname ARIMA(1,0,2)(2,1,1)[12]
+# Imame D=1
+# Eksperimentuojame sudarinėdami medelius.
+fit1 <- Arima(duom, order=c(1,0,1), seasonal=c(1,1,1));fit1
+fit2 <- Arima(duom, order=c(1,0,2), seasonal=c(2,1,0));fit2
+fit3 <- Arima(duom, order=c(0,0,1), seasonal=c(1,1,0));fit3
+```
+ Palyginsime modelių AIC:
+```{r}
+aic<-c(AIC(autofit),AIC(fit1),AIC(fit2),AIC(fit3))
+modelis<-c("autofit","fit1","fit2","fit3")
+data.frame(modelis,aic)
+```
+Lyginant modelių AIC, matyti, kad geriausias modelis yra **ARIMA(1,0,1)(1,1,1)[12]**, tai yra parinktas su fit1.
+
+**(d)** Patikrinsime ar **fit1** liekanos yra baltasis triukšmas.
+```{r}
+fit1                         # gautas geriausias modelis
+
+Acf(fit1$res, lag.max=20)    # panašu, kad yra baltasis triukšmas
+# H0: liekanos yra baltasis triukšmas;
+# H1: liekanos nėra baltasis triukšmas.
+Box.test(fit1$res, type="Lj")
+```
+p-value < 0.05 => H0 atmetame, taigi liekanos nėra baltasis triukšmas.
+
+Pabandysime analizuoti kitą modelį.
+```{r}
+fit2                         # gautas geriausias modelis
+
+Acf(fit2$res, lag.max=20)    # panašu, kad yra baltasis triukšmas
+# H0: liekanos yra baltasis triukšmas;
+# H1: liekanos nėra baltasis triukšmas.
+Box.test(fit2$res, type="Lj")
+```
+p-value > 0.05 => H0 priimame, liekanos yra baltasis triukšmas.
+
+**(e)** Su geriausiu modeliu prognozuosime 24 mėn. į priekį:
+```{r}
+fore<-forecast(fit2,h=24)
+plot(fore)
+```
+  
+Prognozė atrodo logiška. Ji svyruoja, tai krenta, tai auga. Natūralu, kad elektros gamyba svyruoja. Tačiau matyti bendras augimas, kas taip pat yra logiška.
+
+**(f)** Pabandysime atlikti prognozę remiantis **ETS:**
+```{r}
+autoets <- ets(duom);autoets    # gautas modelis ETS(M,N,A)
+forets <- forecast(autoets, h=24)
+plot(forets)
+```
+  
+Tiek auto.arima, tiek EST prognozės yra panašios. Abi prognozuoja svyravimus.
+  
+Palyginsime, kuris modelis yra geresnis:
+```{r}
+accuracy(fit2)
+accuracy(autoets)
+```
+
+**ETS** modelis yra geresnis, negu gautas su **arima** funkcija. Taigi tikėtina, kad **ETS(M,N,A)** prognozė yra tikslesnė.
