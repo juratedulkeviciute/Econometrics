@@ -1,0 +1,400 @@
+---
+title: "egzaminas"
+author: "Jūratė Dulkevičiūtė"
+date: "Wednesday, June 15, 2016"
+output: html_document
+---
+
+###  1 užduotis
+
+**(a)**
+```{r}
+x<-function(n){
+   x1<-rnorm(n, mean = 3, sd = 2)
+   x2<-rnorm(n, mean = -1, sd = 3)
+   x<-x1+x2
+   return(x)
+}  
+x(1)
+
+# teorinis skirstinys turėtų būti su vidurkiu 2, nes 3-1=2 ir stand. nuok = 5, nes 2+3. 
+
+```
+
+**(b)**
+```{r}
+imtis<-x(1000)
+head(imtis)
+```
+
+**(c)**
+```{r}
+# empirinis
+hist(imtis, probability = TRUE)
+lines(density(imtis), col=4, lwd=2)
+curve(dnorm(x, mean = 2, sd = 5), lwd=2, col=2, add=TRUE) # teorinis
+
+```
+
+```{r}
+n=10000
+mean(x(n)^2-x(n)-2>0) # tikimybė
+```
+
+```{r}
+tik<-function (){
+  mm<-0
+  if (x(1)>0)
+    mm<-x(1)^2-x(1)-2
+   return (mm)
+} 
+experiment<-replicate(10000, tik())
+mean(experiment>0) # tikimybė
+```
+
+
+#### 2 užduotis
+
+```{r, message=FALSE}
+library(car)
+library(fpp)
+library(dynlm)
+```
+
+#### 1 dalis. Duomenų apžvalga ir paruošimas.
+
+**(a)**  Nuskaitome duomenų masyvą.
+```{r}
+duom<-read.csv2("data_b.csv")
+data1<-duom[-c(416,417,418,419,420,421,422),]
+
+str(data1)
+#iš str matome, kad reiks keisti duomenų tipą į numeric.
+```
+
+**(b)** Paruošiame duomenis naudojimui.
+```{r}
+
+data1[data1=="NAN"] <- NA
+data2 <- na.omit(data1)
+
+# Pašalinome penkias reikšmes
+
+data2$islaidosVaisiams <- as.numeric(paste(data2$islaidosVaisiams))
+data2$butinosIslaidos <- as.numeric(paste(data2$butinosIslaidos))
+data2$pajamos <- as.numeric(paste(data2$pajamos))
+data2$atstumasIkiParduotuves <- as.numeric(paste(data2$atstumasIkiParduotuves))
+
+
+str(data2)  # pasikeitėme kintamuosius į numeric, išskyrus rajonoId, jis yra faktorius, t.y. dummy variable
+```
+
+Žiūrime, ar yra išskirčių:
+```{r}
+modIsskirtims<-lm(islaidosVaisiams~butinosIslaidos+pajamos+atstumasIkiParduotuves+factor(rajonoId),data=data2)
+qqPlot(modIsskirtims, id.n=3) # panašu, kad išskirtys yra 372,272 ir 134 eilutėse. (kitose jau ne tokios žymios išskirtys)
+
+outlierTest(modIsskirtims)  # rastos išskirtys eilutėse 372,272,134.
+# Panaikiname ikirtis:
+data<-data2[-c(372,272,134),]
+```
+`data` yra galutiniai duomenys. Iš viso pašalinome 8 reikšmes.
+
+
+**(c)** Trumpa kintamųjų apžvalga:
+```{r}
+plot(data)  # nepanašu, kad kurie nors kintamieji tarpusavy koreliuotų.
+summary(data)
+```
+
+**(d)** Duomenų masyvą suskaidome į du atskirus ir nesikertančius masyvus atsitiktinai:
+```{r}
+library(dplyr)
+trainSet<-sample_frac(data, 0.8)  # atsitiktinai parenka 80% reikšmių
+a<-as.numeric(rownames(trainSet)) # because rownames() returns character
+testSet<-data[-a,]
+```
+
+#### 2 dalis. Tiesinio modelio sudarymas. Naudojame trainSet masyvą.
+
+**(a)**  Tiesinis modelis, kuriame prognozuojamas kintamasis yra išlaidos vaisiams.
+```{r}
+mod1<-lm(islaidosVaisiams~butinosIslaidos+pajamos+atstumasIkiParduotuves+factor(rajonoId),data=trainSet)
+summary(mod1)
+```
+Gavome, kad atstumas iki parduotuvės yra nereikšmingas. Sudarysime modelį be jo.
+```{r}
+mod2<-lm(islaidosVaisiams~butinosIslaidos+pajamos+factor(rajonoId),data=trainSet)
+summary(mod2)
+```
+Visi kintamieji yra reikšmingi, išskyrus laisvąjį narį. (p-value < 0.05 => kintamasis reikšmingas)
+```{r}
+mod3<-lm(islaidosVaisiams~+butinosIslaidos+pajamos+factor(rajonoId)-1,data=trainSet)
+summary(mod3)  # panaikinus laisvąjį narį modelis išsikraipo, todėl aš jį paliksiu.
+
+# Tolesniai analizei nagrinėsiu mod2 modelį
+fit1<-mod2
+summary(fit1)
+```
+
+**(c)** Tikrinkite modelio savybes: multikolinerumą, heteroskedastiškumą ir paklaidų normalumą
+MULTIKOLINEARUMAS:
+```{r}
+vif(fit1)
+```
+Matome, kad visi yra < 10.  
+Jei modelyje yra multikolinearumo problema, galimos regresijos pasekmės:  
+1)sulaukiame, kad kintamieji yra nereikšmingi, nors žinome, kad jų bendras poveikis tikrai nėra nulinis;
+2)koreliuotų kintamųjų įgyti koeficientai - priešingų reikšmių, t.y. jie vienas kitą kompensuoja. Todėl prarandama aiški interpretacija.  
+3)modelio interpretacija tampa neaiški: jei koreliuotą kintamąjį padidiname vientetu, nebegalime tiksliai nusakyti, kaip keičiasi priklausomas kintamasis.
+
+
+HETEROSKEDASTIŠKUMAS: 
+```{r}
+plot(fit1$res~fit1$fitted, main="Paklaidų išsibarstymas pagal reikšmes", col=2, ylab="fit1 paklaidos", xlab="islaidos Vaisiams")
+abline(0,0)
+ncvTest(fit1)
+```
+Kadangi p<0.05, vadinasi, atmetame testo H0 hipotezę, kuri teigia, kad modelis yra homoskedastiškas - paklaidų dispersija nėra konstanta.
+
+Jei homoskedastiškumas nėra tenkinamas, tai formaliai didelės blogybės nėra - įverčiai ir toliau liktų nepaslinkti ir suderinti. Visgi reiktų būti atidiem ir papildomai pasvarstyti tris svarbius niuansus:  
+1) Nehomogeniškumas gali indikuoti modelio neadekvatumą. Pvz. gal liko nepastebėta netiesinė sąveiką? O gal liko didelių išskirčių?    
+2) Statistinio reikšmingumo tikrinimui naudojama kovariacijų matrica gali būti neteisinga.
+3) Nors įverčiai nepaslinkti, bet dabar negalime teigti, kad jie yra efektyvūs - tokiu atveju gali būti ir geresnių vertinimo būdų.  
+
+
+PAKLAIDŲ NORMALUMAS:
+```{r}
+hist(fit1$res)   # nemanau, kad paklaidos bus normalios, nes yra poslinkis.
+shapiro.test(fit1$res) 
+
+plot(residuals(mod2), type="l", main="Modelio fit1 paklaidos", ylab="fit1 paklaidos", xlab="Stebėjimas", col=2)
+abline(0,0) 
+```
+p-value < 0.05 => H0 atmetame, tai patvirtina, kad liekanų paklaidos nėra normalios. Tą mes ir spėjome.
+
+LIEKANŲ AUTOKORELIACIJA:
+```{r}
+durbinWatsonTest(fit1)
+```
+Kadangi testo p-value > 0.05 =>  H0: nėra koreliacijos tarp liekanų, priimame.
+
+#### 3 dalis. Modelio tobulinimas.
+
+**(a)**Pateikite dvi sklaidos diagramas. Pirmoji tarp modelio paklaidų ir butinosIslaidos kintamojo. O antroji, tarp modelio paklaidų ir pajamos kintamojo. Pakomentuokite rezultatus. Tendencijų išryškinimui gali būti naudinga lowess funkcija.
+```{r}
+plot(lowess(fit1$res~trainSet$pajamos), ylab="fit1 paklaidos", xlab="Pajamos") # matoma parabolė
+
+plot(lowess(mod2$res~trainSet$butinosIslaidos), ylab="fit1 paklaidos", xlab="butinos išlaidos")   #irgi kažkas panašaus į parabolę.
+```
+Matome, kad priklausomumas tikrai nėra tiesiškas, gali būti kad tikslingiau bus imti kvadratus.
+
+**(b)** Bandom dar kažką pakeisti:
+```{r}
+mo1<-lm(islaidosVaisiams~butinosIslaidos+I(pajamos^2)+factor(rajonoId),data=trainSet)
+summary(mo1)  # kinatmieji liko reikšmongi
+
+mo2<-lm(islaidosVaisiams~I(butinosIslaidos^2)+I(pajamos^2)+factor(rajonoId),data=trainSet)
+summary(mo2)  # visi kintamieji reikšmingi + laisvasis narys reikšmingas
+
+mo3<-lm(islaidosVaisiams~I(butinosIslaidos^2)+pajamos+factor(rajonoId),data=trainSet)
+summary(mo3)  # visi kintamieji reikšmingi + laisvasis narys reikšmingas
+
+# Galbūt sudarėme kelis visai neblogus modelius. Pažiūrėsime kuris yra tinkamiausias atsižvelgiant į AIC
+AIC(mo1);AIC(mo2);AIC(mo3)
+# Mažiausią AIC turi mo3, taigi jį pasirenkame kaip antrąjį tinkamą modelį
+fit2<-mo3
+```
+
+**(c)**
+```{r}
+# modeliui fit1
+mse1<-(1/(326)*sum(fit1$res)^2)  # trainSet
+mse1
+mse2<-(1/(89)*sum(fit1$res)^2)   # testSet
+mse2
+
+# modeliui fit2
+mse11<-(1/(326)*sum(fit2$res)^2) # trainSet
+mse11
+mse22<-(1/(89)*sum(fit2$res)^2)  # testSet
+mse22
+
+a<-rbind(mse1,mse2,mse11,mse22)
+a
+colnames(a)<-c("MSE")
+a
+
+fitMain<-fit1 # pasirenkame pirmą modelį
+summary(fit1)
+```
+islaidosVaisiams=0.035+0.027butinosIslaidos+0.005pajamos-0.041(rajonoID=2)+0.097(rajonoId=3)
+
+
+
+### 3 Užduotis
+
+#### 1 dalis. Duomenų paruošimas.
+**(a)** Susidarome modelį:
+```{r}
+head(M1Germany)
+modd<-dynlm(logprice~L(loggnp, 1)+I(L(loggnp,2)-L(loggnp,3)), data=M1Germany) 
+# I(L(loggnp,2)-L(loggnp,3)), tai yra loggnp su 2 lagais - loggnp su 3 lagais, nes turim delta, skirtumo operatorių.
+summary(modd)
+```
+
+**(b)** Gaukite įvertintos lygties liekanas. Jas vadinsime serOrg. Rekomenduojama liekanų objektą transformuoti į laiko eilučių klasę (ts).
+```{r}
+modd$res
+str(modd$res)
+ser<-ts(modd$res, start =c(1960,4), frequency=4 )
+```
+
+**(c)** Ar `ser` stacionari eilutė?
+H0: duomenys stacionarūs;
+H1: nestacionarūs.
+```{r}
+plot(ser)
+kpss.test(ser) # p-value < 0.05 => H0 atmetame. Turimi duomenys nėra stacionarūs. Bamdysim diferencijuoti.
+ns<-ndiffs(ser) ## surandame diferencijavimo eile
+ns
+kpss.test(diff(ser,differences=ns)) # p-vaule > 0.05 H0 priimame. Duomenys yra stacionarūs.
+ser1<-diff(ser,differences=ns)  
+plot(ser1)  # stacionari eilutė
+```
+
+**(d)** 
+```{r}
+l<- BoxCox.lambda(ser);l
+plot(ser)
+plot(BoxCox(ser, l))
+hist(ser)
+hist(BoxCox(ser, l))
+ser2<-BoxCox(ser, l)
+```
+Box-Cox transformacija manau yra naudinga, duoda pokyčius, histograma labiau tampa panaši į varpą. 
+
+#### 2 dalis MODELIAVIMAS
+**(a)** auto ets
+```{r}
+mod1<-ets(ser, lambda=l)  # darome su tranformuotais duomenimis
+summary(mod1)
+forc1 <- forecast(mod1, h=20)
+plot(forc1)
+```
+Gavome ETS(A,N,A), A- additive errors, N- no trend, A - Seasonal Component 
+
+**(b)** Kiti variantai:
+```{r}
+pirm<-holt(ser2, h=20)  # čia panaudosiu ser2, nes rašant lambda=l išmeta nesąmonę, kurios nemoku pataisyt
+plot(pirm)
+antr<-holt(ser2, h=20,damped=TRUE, alpha=0.9) # čia panaudosiu ser2, nes rašant lambda=l išmeta nesąmonę, kurios nemoku pataisyt
+plot(antr)
+
+# pasirinksime geriausią modelį
+accuracy(pirm);accuracy(antr)
+# Mažiausią RMSE turi pirm modelis, todėl jį pasirenkame kaip mod2
+mod2<-pirm
+```
+`mod2` nuo `mod1` skiriasi tuo, kad mod2 nevertina sezoniškumo, jo prognozė nešokinėja, yra tiesė.
+
+**(c)** `auto.arima` funkcija:
+```{r} 
+mod3<-auto.arima(ser,lambda=l)
+summary(mod3)
+```
+ARIMA(1,1,0)(2,0,1)[4], tai yra ARIMA(p,d,q)(P,D,Q)
+Mažosios raides žymi nesezoninę modelio dalį:
+p - autoregresine modelio dalis
+d - diferencijavimo eile
+q - moving average modelio dalis
+Didžiosios raides raides tas pats kas ir mažosios tik jos yra skirtos sezoniniai modelio daliai aprašyti. Indeksas salia antruju skliaustu reiskia periodu skaiciu per sezona. Šiuo atvėju 4, net yra ketvirčiai.
+Buvo siūloma diferencijuoti vieną kartą, auto.arima duoda d=1, taigi sutampa.
+
+**(d)** Eksperimentuojam:
+```{r}
+m1<-arima(ser2, order = c(1,1,0),seasonal = list(order=c(1,0,1),period=4))  # arima() neduoda naudoti lamda=l, todėl naudosiu ser2 duomenis
+m2<-arima(ser2, order = c(2,1,0),seasonal = list(order=c(2,0,0),period=4))
+m3<-arima(ser2, order = c(2,1,1),seasonal = list(order=c(1,0,1),period=4))
+
+accuracy(m1)
+accuracy(m2)
+accuracy(m3)
+
+# mažiausias RMSE yra m3, todėl jį pasirenkame kaip geriausią.
+mod4<-m3
+```
+
+#### 3 dalis. Modelių tyrimas ir palyginimas
+
+**(a)**  Ar modelių liekanos yra baltas triukšmas?
+Naudosim Ljung–Box testą:
+H0: liekanos yra baltasis triukšmas;
+H1: liekanos nėra baltasis triukšmas.
+```{r}
+acf(mod1$res)  # Tikėtina, kad bus baltasis triukšmas.
+Box.test(mod1$res, fitdf=0, type="Lj")
+#p-value > 0.05 => H0 priimame. mod1 liekanos yra baltasis triukšmas.
+
+acf(mod2$res)  # Tikrai nebus baltasis triukšmas.
+Box.test(mod2$res, fitdf=0, type="Lj")
+#p-value < 0.05 => H0 atmetame. mod2 liekanos nėra baltasis triukšmas.
+
+acf(mod3$res)  # Tikėtina, kad bus baltasis triukšmas.
+Box.test(mod3$res, fitdf=0, type="Lj")
+#p-value > 0.05 => H0 priimame. mod3 liekanos yra baltasis triukšmas.
+
+acf(mod4$res)  # Tikėtina, kad bus baltasis triukšmas.
+Box.test(mod4$res, fitdf=0, type="Lj")
+#p-value > 0.05 => H0 priimame. mod4 liekanos yra baltasis triukšmas.
+```
+Gavome, kad  ne visų modelių liekonos yra baltasis triukšmas.
+
+**(b)** Išskiriame duomenis į `trainSet` ir `testSet`:
+```{r}
+trainSet<-window(ser, end=c(1987,4))
+testSet<-window(ser, start=c(1988,1))
+```
+
+**(c)** Visus keturis modelius pritaikome `trainSet` duomenim:
+```{r}
+mod11<-ets(trainSet, model='ANA')
+mod22<-holt(trainSet, h=20)
+mod33<-arima(trainSet, order = c(1,1,0),seasonal = list(order=c(2,0,1),period=4))
+mod44<-arima(trainSet, order = c(2,1,1),seasonal = list(order=c(1,0,1),period=4))
+```
+
+**(d)** Išbrėžkite visų keturių modelių prognozes (su pasikliautinais intervalais). Ir ant viršaus išbrėžkite faktines reikšmes iš testSet duomenų. Kuri prognozė atrodo geriausia?
+```{r}
+# Nežinau kodėl neišbrėžia gražiai grafikų, bet moku tik taip.
+plot(forecast(mod11))
+lines(testSet, col=2, lwd=2)
+
+plot(forecast(mod22))
+lines(testSet, col=2, lwd=2)
+
+plot(forecast(mod33))
+lines(testSet, col=2, lwd=2)
+
+plot(forecast(mod44))
+lines(testSet, col=2, lwd=2)
+```
+Panašu, kad geriausia prognozė yra mod33.
+
+**(e)** Tikriname modelių `accuracy`:
+```{r}
+library(knitr)
+
+lent<-rbind (
+  accuracy(forecast(mod11), ser)[,2],
+  accuracy(forecast(mod22), ser)[,2],
+  accuracy(forecast(mod33), ser)[,2],
+  accuracy(forecast(mod44), ser)[,2]
+)
+rownames(lent) <- c("mod11 prognozė", "mod22 prognozė", "mod33 prognozė", "mod44 prognozė")
+kable(lent, digits=5)
+```
+Matome, kad RMSE mums parodė, kad geriausia prognozė yra mod33, tai yra auto.arima modelio.
+```{r}
+modMain<-mod3
+```
